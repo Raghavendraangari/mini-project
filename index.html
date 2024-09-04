@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notesort</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        /* Add your CSS styles here */
+        @property --angle {
+            syntax: "<angle>";
+            initial-value: 0deg;
+            inherits: false;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin-top: 10;
+            padding: 0;
+            background-color: #f2f2f2;
+            display: grid;
+            place-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .moving-border {
+            width: 200px;
+            height: 300px;
+            position: relative;
+            background: #FFFFFF;
+            padding: 4px;
+        }
+
+        .moving-border::before,
+        .moving-border::after {
+            content: "";
+            position: absolute;
+            inset: -0.2rem;
+            z-index: -1;
+            background: linear-gradient(var(--angle), #032146, #C3F2FF, #b00);
+            animation: rotate 10s linear infinite;
+        }
+
+        .moving-border::after {
+            filter: blur(10px);
+        }
+
+        @keyframes rotate {
+            0% {
+                --angle: 0deg;
+            }
+
+            100% {
+                --angle: 360deg;
+            }
+        }
+
+        .main-title {
+            text-align: center;
+            font-size: 36px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .upload-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+            color: #007bff;
+        }
+
+        .upload-button {
+            background-color: #007bff;
+            color: #fff;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .upload-button:hover {
+            background-color: #0056b3;
+        }
+        
+        .name {
+            border-style: solid;
+            border-color: lightgreen;
+            color: #0056b3;
+            text-align: center;
+            padding: 10px;
+        }
+
+        #file-names {
+            margin-top: 10px;
+        }
+
+        .file-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid #ccc;
+            padding: 8px;
+            margin-bottom: 8px;
+        }
+
+        .file-item span {
+            flex-grow: 1;
+        }
+
+        .file-item button {
+            background: red;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="moving-border">
+        <h1 class="main-title">Notesort</h1>
+        <form id="upload-form" action="/upload" method="post" enctype="multipart/form-data">
+            <div class="upload-container">
+                <i class="upload-icon fas fa-cloud-upload-alt"></i>
+                <label for="file-upload" class="upload-button">Upload Files</label>
+                <input id="file-upload" name="file" type="file" style="display: none;" multiple>
+                <ul id="file-list" class="file-list"></ul>
+            </div>
+            <button type="submit" class="upload-button">Upload and Process</button>
+        </form>
+    </div>
+</div>
+
+<div class="project-details">
+    <div class="container">
+        <h2>Project Details</h2>
+        <div class="functionality">
+            <h3>Sort Functionality</h3>
+            <p>The sort functionality utilizes codes of the form <strong>"#A" followed by a number</strong>. It processes a queue of images belonging to different clusters and sorts them into the required format based on the provided codes.</p>
+        </div>
+        <div class="functionality">
+            <h3>Link Functionality</h3>
+            <p>The link functionality uses codes of the form <strong>"#X" followed by a number</strong>. It serves two purposes:</p>
+            <ol>
+                <li>Redirects users to the relevant website associated with the link if available.</li>
+                <li>Allows users to add a link if the code is not yet associated with any details.</li>
+            </ol>
+        </div>
+        <div class="requirements">
+            <h3>Requirements to Run the Program</h3>
+            <p>We require a <strong>code handwritten clearly</strong> at the top of the page. It must be mandatorily enclosed in a rectangle border.</p>
+        </div>
+    </div>
+</div>
+
+<h1 class="name">
+    Developed By Sai Meghanadh Ganta
+</h1>
+
+<script>
+    const fileInput = document.getElementById('file-upload');
+    const fileList = document.getElementById('file-list');
+    const form = document.getElementById('upload-form');
+
+    let files = [];
+
+    fileInput.addEventListener('change', () => {
+        for (let file of fileInput.files) {
+            files.push(file);
+        }
+        updateFileList();
+    });
+
+    fileList.addEventListener('click', (e) => {
+        if (e.target.tagName === 'BUTTON') {
+            const index = e.target.getAttribute('data-index');
+            files.splice(index, 1);
+            updateFileList();
+        }
+    });
+
+    form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const formData = new FormData();
+        files.forEach((file, index) => {
+            formData.append('file', file, file.name);
+        });
+        fetch('/upload', {
+            method: 'POST',
+            body: formData,
+        })
+        .then(response => response.json())  // Ensure the Flask app returns JSON
+        .then(data => {
+            console.log(data);
+            // Handle the response and update the UI accordingly
+            if (data.redirect) {
+                window.location.href = data.redirect;
+            } else {
+                // Handle other responses
+            }
+        })
+        .catch(error => {
+            console.error(error);
+        });
+    });
+
+    function updateFileList() {
+        fileList.innerHTML = '';
+        files.forEach((file, index) => {
+            const li = document.createElement('li');
+            li.className = 'file-item';
+            li.innerHTML = `<span>${file.name}</span> <button type="button" data-index="${index}">&times;</button>`;
+            fileList.appendChild(li);
+        });
+    }
+</script>
+
+</body>
+</html>
